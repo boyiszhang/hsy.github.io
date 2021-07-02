@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		
+		<link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
+		<link rel="stylesheet" href="https://js.arcgis.com/4.18/esri/css/main.css">
+		
+		<script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
+		<script src="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+		<script src="https://js.arcgis.com/4.18/"></script>
+
+		<style>
+			html,
+			body {
+				margin: 0;
+				padding: 0;
+				height: 100%;
+				width: 100%;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container-fluid" style="height: 100%;">
+			<nav class="row navbar navbar-expand-lg navbar-dark bg-dark" style="height: 8%;">
+			<a class="navbar-brand" href="#"><b>全国矿产资源分布</b></a>
+			<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+			<div class="collapse navbar-collapse" id="navbarNav">
+				<ul class="navbar-nav">
+					<li class="nav-item">
+						<a class="nav-link" href="#">18级地理信息科学</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="#">黄诗雨</a>
+					</li>
+				</ul>
+			</div>
+		</nav>
+	
+			<div class="row" id="mymap" style="height: 92%;"></div>
+		</div>
+	</body>
+	<script>
+			require([
+					"esri/Map",
+					"esri/Basemap",
+					"esri/views/MapView",
+					
+					"esri/layers/FeatureLayer",
+					
+					"esri/widgets/Legend",
+					"esri/widgets/BasemapGallery",
+					"esri/widgets/LayerList",
+					"esri/widgets/Expand",
+					
+					"esri/renderers/DotDensityRenderer",
+					"esri/smartMapping/renderers/color",
+					
+					"esri/PopupTemplate",
+				], function(Map, Basemap, MapView, FeatureLayer,
+				Legend, BasemapGallery, LayerList, Expand, DotDensityRenderer, colorRendererCreator, PopupTemplate) {
+			//**********************************************功能1：切换地图的底图**********************************************************
+				var map = new Map({
+					basemap: "streets"
+				});
+				
+				var mine_popup = new PopupTemplate({
+					title: "<b>{地区}矿产资源比例</b>",
+					content: [{
+						type: "media",
+						mediaInfos: [{
+							type: "column-chart",
+							caption: "将鼠标放到条柱上查看 单位：万吨(然气为亿立方米、煤和铁为亿吨)",
+							value: {
+								fields: ["石油","然气","煤炭","铁","锰","铬","钒","钛铁"]
+								}
+							}]
+						}
+					]
+				});
+				
+				var mine = new FeatureLayer({
+					url: "https://services9.arcgis.com/SKX4Ho42BPrgC7Qi/arcgis/rest/services/%E8%B5%84%E6%BA%90%E5%88%86%E5%B8%83/FeatureServer",
+					popupTemplate: mine_popup,
+				});
+
+				map.add(mine);
+
+				var view = new MapView({
+					container: "mymap",
+					map: map,
+					center: [114.71511,32.09042],
+					zoom: 5
+				}); 
+
+			// // #00b6f1|#d9bf0d|#c44245|#6a28c7|#b9a087|#ab579d|#78aea0|#1e8553
+			// const colors = ["#00b6f1", "#d9bf0d", "#c44245", "#6a28c7", "#b9a087", "#ab579d", "#78aea0", "#1e8553"];
+
+				const dot_mine = new DotDensityRenderer({
+					dotValue: 8,
+					outline: null,
+					referenceScale: view.scal,
+					attributes: [
+						{
+							valueExpression: "$feature.石油",
+							color: "brown",
+							label: "石油"
+						},
+						{
+							valueExpression: "$feature.然气*5",
+							color: "blue",
+							label: "天然气"
+						},
+						{
+							valueExpression: "$feature.煤炭*65",
+							color: "pink",
+							label: "煤炭"
+						},
+						{
+							valueExpression: "$feature.铁*1100",
+							color: "red",
+							label: "铁矿"
+						},
+						{
+							valueExpression: "$feature.锰*4",
+							color: "green",
+							label: "锰矿"
+						},
+						{
+							valueExpression: "$feature.铬*420",
+							color: "yellow",
+							label: "铬矿"
+						},
+						{
+							valueExpression: "$feature.钒*100",
+							color: "gray",
+							label: "钒矿"
+						},
+						{
+							valueExpression: "$feature.钛铁*4",
+							color: "black",
+							label: "钛铁矿"
+						}
+					],
+					legendOptions: {
+						unit: "万吨/亿立方米/亿吨"
+					}
+				});
+
+				mine.renderer = dot_mine;
+
+				var legend = new Expand({
+					content: new Legend({
+						view: view,
+						layerInfos:[{
+							layer: mine,
+							title: "矿产资源分布"
+						}]
+					}),
+					view: view
+				});
+				view.ui.add(legend, "bottom-left");
+				
+				var basemapgallery = new Expand({
+					content: new BasemapGallery({
+						view: view
+					}),
+					view: view
+				});
+				view.ui.add(basemapgallery, "top-left");
+
+			});
+		</script>
+</html>
